@@ -1,0 +1,10 @@
+FROM migrate/migrate
+
+WORKDIR /migration
+
+COPY entrypoint.sh /
+RUN chmod u+x /entrypoint.sh
+
+COPY migration /migration
+
+ENTRYPOINT ["/entrypoint.sh"]
