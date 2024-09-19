@@ -31,6 +31,7 @@ export class GMController {
   })
   @HttpCode(200)
   async createBoard(@Body() raw: number[][]): Promise<string> {
-    return await this.gmService.createBoard({ raw });
+    const board = await this.gmService.createBoard({ raw });
+    return board.id;
   }
 }

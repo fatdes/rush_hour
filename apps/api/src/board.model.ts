@@ -27,9 +27,4 @@ export class Board extends Model {
   // hash of h & v
   @Column
   hash: string;
-
-  // raw format as cars are indicated by 1, 2, ..., n
-  raw: number[][];
-  rawH: number[][];
-  rawV: number[][];
 }

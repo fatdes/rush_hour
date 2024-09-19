@@ -2,6 +2,7 @@ import { getModelToken } from '@nestjs/sequelize';
 import { Test } from '@nestjs/testing';
 import { Board } from './board.model';
 import { GMService } from './gm.service';
+import { emptyBoard } from './utils/array';
 
 describe('GMService', () => {
   let gmService: GMService;
@@ -70,13 +71,34 @@ describe('GMService', () => {
         ],
       ],
     ])('should fail when board is %s', async (_, raw) => {
-      try {
-        await gmService.createBoard({ raw });
-        fail('no exception is thrown, something is wrong');
-      } catch (err) {
-        expect(err.getResponse().message).toEqual(
-          'board must be 6x6 number array',
-        );
+      await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        'board must be 6x6 number array',
+      );
+    });
+
+    it('should fail when board has non integer', async () => {
+      for (let v = 6; --v >= 0; ) {
+        for (let h = 6; --h >= 0; ) {
+          const raw = emptyBoard();
+          raw[v][h] = v * 10 + h + 0.1;
+
+          await expect(gmService.createBoard({ raw })).rejects.toThrow(
+            `[${v}][${h}] is not an integer`,
+          );
+        }
+      }
+    });
+
+    it('should fail when board has negative integer', async () => {
+      for (let v = 6; --v >= 0; ) {
+        for (let h = 6; --h >= 0; ) {
+          const raw = emptyBoard();
+          raw[v][h] = -1;
+
+          await expect(gmService.createBoard({ raw })).rejects.toThrow(
+            `[${v}][${h}] is negative integer`,
+          );
+        }
       }
     });
 
@@ -108,8 +130,8 @@ describe('GMService', () => {
         .spyOn(mockBoardModel, 'findCreateFind')
         .mockReturnValue([{ id: 'OK' }, false]);
 
-      const id = await gmService.createBoard({ raw });
-      expect(id).toEqual('OK');
+      const board = await gmService.createBoard({ raw });
+      expect(board.id).toEqual('OK');
     });
   });
 });
