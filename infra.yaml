@@ -1,0 +1,42 @@
+services:
+  # redis
+  redis:
+    image: "redis:alpine"
+    ports:
+      - 6379:6379
+  redis-commander:
+    image: "ghcr.io/joeferner/redis-commander"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "9379:8081"
+    user: redis
+    depends_on:
+      - redis
+
+  # postgres
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ./.local/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=rush
+      - POSTGRES_PASSWORD=hour
+      - POSTGRES_DB=rush_hour
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d rush_hour -U rush -t 0"]
+      interval: 5s
+      timeout: 15s
+      retries: 3
+  # uncomment if you want it
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   ports:
+  #     - "9432:80"
+  #   environment:
+  #     - PGADMIN_DEFAULT_EMAIL=admin@test.com
+  #     - PGADMIN_DEFAULT_PASSWORD=password
+  #   depends_on:
+  #     - postgres

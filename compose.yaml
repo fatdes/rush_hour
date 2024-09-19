@@ -1,0 +1,63 @@
+include:
+  - path:
+      - infra.yaml
+services:
+  db-migration:
+    build:
+      context: db
+      dockerfile: Dockerfile.dev
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./db/migration
+          target: /migration
+    depends_on:
+      postgres:
+        condition: service_healthy
+  base:
+    build: .
+    deploy:
+      mode: replicated
+      replicas: 0
+  api:
+    extends: base
+    develop:
+      watch:
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: ./apps/api/
+    deploy:
+      mode: replicated
+      replicas: 1
+    ports:
+      - "8080:3000"
+    environment:
+      - "API_PORT=3000"
+      - "REDIS_HOST=redis"
+      - "ENABLE_DEV_CORS=true"
+    depends_on:
+#      - redis
+      - postgres
+      - db-migration
+  solver:
+    extends: base
+    develop:
+      watch:
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: ./apps/solver/
+    deploy:
+      mode: replicated
+      replicas: 1
+    command:
+      - yarn
+      - run
+      - start:solver:prod
+    ports:
+      - "8081:3001"
+    environment:
+      - "SOLVER_PORT=3001"
+      - "REDIS_HOST=redis"
+      - "ENABLE_DEV_CORS=true"
