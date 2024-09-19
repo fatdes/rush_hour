@@ -102,6 +102,124 @@ describe('GMService', () => {
       }
     });
 
+    it('should fail when board has no car', async () => {
+      const raw = emptyBoard();
+
+      await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        `board must have car[1] of size 2 at row 2`,
+      );
+    });
+
+    describe('should fail when board car[1] is not size 2', () => {
+      it('size 1', async () => {
+        const raw = emptyBoard();
+        raw[2][2] = 1;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `board must have car[1] of size 2 at row 2`,
+        );
+      });
+
+      it('size 3', async () => {
+        const raw = emptyBoard();
+        raw[2][0] = 1;
+        raw[2][1] = 1;
+        raw[2][2] = 1;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `board must have car[1] of size 2 at row 2`,
+        );
+      });
+    });
+
+    it.each([[0], [1], [3], [4], [5]])(
+      'should fail when board car[1] is not in row 2',
+      async (row) => {
+        const raw = emptyBoard();
+        raw[row][0] = 1;
+        raw[row][1] = 1;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `board must have car[1] of size 2 at row 2`,
+        );
+      },
+    );
+
+    describe('should fail when board car is not placed correctly', () => {
+      it('size 2 diagonal', async () => {
+        const raw = emptyBoard();
+        raw[0][0] = 1;
+        raw[1][1] = 1;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[1] is not placed correctly`,
+        );
+      });
+
+      it('size 3 twisted', async () => {
+        const raw = emptyBoard();
+        raw[0][0] = 1;
+        raw[0][1] = 1;
+        raw[1][2] = 1;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[1] is not placed correctly`,
+        );
+      });
+    });
+
+    describe('should fail when board has invalid car size', () => {
+      let raw: number[][];
+
+      beforeEach(() => {
+        raw = [
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [1, 1, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+        ];
+      });
+
+      it('horizontal, size < 2', async () => {
+        raw[0][0] = 2;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[2] is invalid size "1"`,
+        );
+      });
+
+      it('vertical, size < 2', async () => {
+        raw[0][5] = 2;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[2] is invalid size "1"`,
+        );
+      });
+      it('horizontal, size > 3', async () => {
+        raw[0][0] = 2;
+        raw[0][1] = 2;
+        raw[0][2] = 2;
+        raw[0][3] = 2;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[2] is invalid size "4"`,
+        );
+      });
+
+      it('vertical, size > 3', async () => {
+        raw[0][5] = 2;
+        raw[1][5] = 2;
+        raw[2][5] = 2;
+        raw[3][5] = 2;
+
+        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          `car[2] is invalid size "4"`,
+        );
+      });
+    });
+
     it.each([
       [
         'simplest',

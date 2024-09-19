@@ -6,12 +6,8 @@ import {
 import { Board } from './board.model';
 
 import { InjectModel } from '@nestjs/sequelize';
+import { Car, CarDirection } from './car';
 import { emptyBoard } from './utils/array';
-
-interface CarIndex {
-  h: number;
-  v: number;
-}
 
 @Injectable()
 export class GMService {
@@ -34,8 +30,8 @@ export class GMService {
       throw new UnprocessableEntityException(error);
     }
 
-    const h: string = '';
-    const v: string = '';
+    const h: string = JSON.stringify(rawH);
+    const v: string = JSON.stringify(rawV);
     const hash: string = 'TODO';
 
     const [board, isNew] = await this.boardModel.findCreateFind({
@@ -48,7 +44,7 @@ export class GMService {
     });
 
     this.logger.log(
-      `created board ${JSON.stringify({ id: board.id, hash: board.hash, isNew })}`,
+      `created board ${JSON.stringify({ id: board.id, hash: board.hash, isNew, h, v })}`,
     );
 
     return board;
@@ -58,12 +54,20 @@ export class GMService {
     return raw.length === 6 && raw.every((r) => r && r.length === 6) === true;
   }
 
+  private placeCar(raw: number[][], car: Car) {
+    for (let position of car.positions()) {
+      raw[position.v][position.h] = car.id;
+    }
+  }
+
   private normalizeRawBoard(raw: number[][]): {
     error?: string;
     rawH?: number[][];
     rawV?: number[][];
   } {
-    const cars: Map<number, Array<{ h: number; v: number }>> = new Map();
+    const cars: Map<number, Car> = new Map();
+    const rawH: number[][] = emptyBoard();
+    const rawV: number[][] = emptyBoard();
 
     for (let v = 0; v < 6; v++) {
       for (let h = 0; h < 6; h++) {
@@ -71,35 +75,68 @@ export class GMService {
 
         if (!Number.isInteger(value)) {
           return {
-            error: `[${v}][${h}] is not an integer`,
+            error: `[${v}][${h}] is not an integer, should be non negative integer`,
           };
         }
 
         switch (true) {
           case value < 0:
             return {
-              error: `[${v}][${h}] is negative integer`,
+              error: `[${v}][${h}] is negative integer, should be non negative integer`,
             };
 
           case value > 0:
             let car = cars.get(value);
             if (!car) {
-              car = [];
+              car = new Car(value);
               cars.set(value, car);
             }
-            car.push({ h, v });
+            if (!car.addPosition({ h, v })) {
+              return {
+                error: `car[${value}] is not placed correctly`,
+              };
+            }
 
             break;
-          // i.e. value === 0
+          case value === 0:
           default:
         }
       }
     }
 
-    // TODO: normalize cars by the position
+    if (
+      cars.size === 0 ||
+      cars.get(1) === undefined ||
+      cars.get(1)!.size() !== 2 ||
+      !cars
+        .get(1)!
+        .positions()
+        .every(({ v }) => v === 2)
+    ) {
+      return {
+        error: `board must have car[1] of size 2 at row 2`,
+      };
+    }
 
-    const rawH: number[][] = emptyBoard();
-    const rawV: number[][] = emptyBoard();
+    for (let car of cars.values()) {
+      if (!car.isValidSize()) {
+        return {
+          error: `car[${car.id}] is invalid size "${car.size()}"`,
+        };
+      }
+
+      switch (car.direction()) {
+        case CarDirection.horizational:
+          this.placeCar(rawH, car);
+
+          break;
+        case CarDirection.vertical:
+          this.placeCar(rawV, car);
+          break;
+      }
+    }
+
+    // TODO: normalize cars by the position
 
     return {
       rawH,
