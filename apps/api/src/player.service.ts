@@ -22,7 +22,7 @@ export class PlayerService {
   ) {}
 
   async startGame({ boardId }: { boardId: string }): Promise<string> {
-    const board = this.boardModel.findByPk(boardId);
+    const board = await this.boardModel.findByPk(boardId);
     if (board === null) {
       throw new BadRequestException(`board "${boardId}" does not exists`);
     }
