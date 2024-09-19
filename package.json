@@ -13,6 +13,7 @@
     "start:api:dev": "nest start api --watch",
     "start:api:debug": "nest start api --debug --watch",
     "start:api:prod": "node dist/apps/api/main",
+    "generate:api:metadata": "ts-node apps/api/src/generate-metadata.ts",
     "build:solver": "nest build solver",
     "start:solver": "nest start solver",
     "start:solver:dev": "nest start solver --watch",

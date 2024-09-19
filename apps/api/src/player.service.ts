@@ -4,10 +4,12 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotImplementedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ulid } from 'ulidx';
 import { Board } from './board.model';
+import { Step } from './dto/game.dto';
 
 @Injectable()
 export class PlayerService {
@@ -34,5 +36,17 @@ export class PlayerService {
     await this.gameState.set(`game:${gameId}`, { boardId });
 
     return `GAME-${gameId}`;
+  }
+
+  async moveCar({
+    gameId,
+    step,
+  }: {
+    gameId: string;
+    step: Step;
+  }): Promise<boolean> {
+    this.logger.debug(`move car ${JSON.stringify({ gameId, step })}`);
+
+    throw new NotImplementedException();
   }
 }
