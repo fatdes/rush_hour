@@ -1,14 +1,4 @@
-export enum MovementDirection {
-  Up,
-  Right,
-  Down,
-  Left,
-}
-
-export interface Step {
-  carId: number;
-  direction: MovementDirection;
-}
+import { MovementDirection, Step } from '@board/board';
 
 export class MoveCarDto implements Step {
   carId: number;

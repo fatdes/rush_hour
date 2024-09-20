@@ -46,7 +46,7 @@ import { PlayerService } from './player.service';
 
         return {
           store: store as unknown as CacheStore,
-          ttl: 5 * 60 * 1000,
+          ttl: 5 * 60 * 1000, // 5 minutes
         };
       },
       inject: [ConfigService],

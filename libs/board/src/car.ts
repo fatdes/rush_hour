@@ -1,3 +1,15 @@
+export enum MovementDirection {
+  Up,
+  Right,
+  Down,
+  Left,
+}
+
+export interface Step {
+  carId: number;
+  direction: MovementDirection;
+}
+
 export enum CarDirection {
   invalid = 0,
   horizational = 1,
@@ -17,8 +29,7 @@ export class Car {
   constructor(readonly id: number) {}
 
   positions(): CarPosition[] {
-    // simple deep clone...
-    return JSON.parse(JSON.stringify(this.pos));
+    return this.pos;
   }
 
   size(): number {

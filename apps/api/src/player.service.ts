@@ -1,15 +1,23 @@
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { BoardService, Step } from '@board/board';
+import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 import {
   BadRequestException,
+  GoneException,
   Inject,
   Injectable,
   Logger,
-  NotImplementedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
 import { ulid } from 'ulidx';
 import { Board } from '../../../libs/board/src/board.model';
-import { Step } from './dto/game.dto';
+
+interface GameState {
+  board: Board;
+  steps: Step[];
+  solved: boolean;
+}
 
 @Injectable()
 export class PlayerService {
@@ -18,7 +26,11 @@ export class PlayerService {
   constructor(
     @InjectModel(Board)
     private boardModel: typeof Board,
-    @Inject(CACHE_MANAGER) private gameState: Cache,
+    @Inject(ConfigService)
+    private configService: ConfigService,
+    @Inject(BoardService)
+    private boardService: BoardService,
+    @Inject(CACHE_MANAGER) private gameState: CacheStore,
   ) {}
 
   async startGame({ boardId }: { boardId: string }): Promise<string> {
@@ -27,15 +39,21 @@ export class PlayerService {
       throw new BadRequestException(`board "${boardId}" does not exists`);
     }
 
-    const gameId = ulid();
+    const gameId = `GAME-${ulid()}`;
 
-    this.logger.debug(
-      `creating game with board ${JSON.stringify({ boardId, gameId })}`,
+    this.logger.debug(`creating game ${JSON.stringify({ boardId, gameId })}`);
+
+    await this.gameState.set(
+      `game:${gameId}`,
+      {
+        board,
+        steps: [],
+        solved: false,
+      } as GameState,
+      { ttl: this.getGameExpiryTtlSecond() },
     );
 
-    await this.gameState.set(`game:${gameId}`, { boardId });
-
-    return `GAME-${gameId}`;
+    return gameId;
   }
 
   async moveCar({
@@ -45,8 +63,48 @@ export class PlayerService {
     gameId: string;
     step: Step;
   }): Promise<boolean> {
-    this.logger.debug(`move car ${JSON.stringify({ gameId, step })}`);
+    const state: GameState = (await this.gameState.get(
+      `game:${gameId}`,
+    )) as GameState;
+    if (!state) {
+      throw new UnprocessableEntityException(
+        `game ${gameId} not found, could be expired.`,
+      );
+    }
 
-    throw new NotImplementedException();
+    if (state.solved) {
+      throw new GoneException(`game ${gameId} is already solved.`);
+    }
+
+    this.logger.debug(`moving car ${JSON.stringify({ gameId, state, step })}`);
+
+    const { error, updated, solved } = await this.boardService.applyStep(
+      state.board,
+      step,
+    );
+    if (error) {
+      throw new BadRequestException(error);
+    }
+
+    state.steps.push(step);
+    await this.gameState.set(
+      `game:${gameId}`,
+      {
+        board: updated,
+        steps: state.steps,
+        solved,
+      } as GameState,
+      { ttl: this.getGameExpiryTtlSecond() },
+    );
+
+    this.logger.debug(
+      `moved car ${JSON.stringify({ gameId, state: { updated, steps: state.steps, solved } })}`,
+    );
+
+    return solved ?? false;
+  }
+
+  private getGameExpiryTtlSecond(): number {
+    return this.configService.get('GAME_EXPIRY_TTL_SECOND') ?? 5 * 60;
   }
 }
