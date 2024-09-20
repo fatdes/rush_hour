@@ -12,6 +12,6 @@ async function bootstrap() {
     Logger.warn('DEV CORS is ENABLED!!!');
     app.enableCors({ origin: 'http://*:8080' });
   }
-  await app.listen(configService.get('API_PORT') ?? 3001);
+  await app.listen(configService.get('SOLVER_PORT') ?? 3001);
 }
 bootstrap();
