@@ -3,15 +3,13 @@ import {
   Logger,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Board } from './board.model';
-
 import { InjectModel } from '@nestjs/sequelize';
+import { Board, emptyBoard } from './board.model';
 import { Car, CarDirection } from './car';
-import { emptyBoard } from './utils/array';
 
 @Injectable()
-export class GMService {
-  private readonly logger = new Logger(GMService.name);
+export class BoardService {
+  private readonly logger = new Logger(BoardService.name);
 
   constructor(
     @InjectModel(Board)

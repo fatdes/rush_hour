@@ -1,11 +1,10 @@
 import { getModelToken } from '@nestjs/sequelize';
 import { Test } from '@nestjs/testing';
-import { Board } from './board.model';
-import { GMService } from './gm.service';
-import { emptyBoard } from './utils/array';
+import { Board, emptyBoard } from './board.model';
+import { BoardService } from './board.service';
 
-describe('GMService', () => {
-  let gmService: GMService;
+describe('BoardService', () => {
+  let boardService: BoardService;
 
   const mockBoardModel = {
     findCreateFind: jest.fn(),
@@ -14,7 +13,7 @@ describe('GMService', () => {
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
-        GMService,
+        BoardService,
         {
           provide: getModelToken(Board),
           useValue: mockBoardModel,
@@ -22,7 +21,7 @@ describe('GMService', () => {
       ],
     }).compile();
 
-    gmService = moduleRef.get<GMService>(GMService);
+    boardService = moduleRef.get<BoardService>(BoardService);
   });
 
   describe('createBoard', () => {
@@ -71,7 +70,7 @@ describe('GMService', () => {
         ],
       ],
     ])('should fail when board is %s', async (_, raw) => {
-      await expect(gmService.createBoard({ raw })).rejects.toThrow(
+      await expect(boardService.createBoard({ raw })).rejects.toThrow(
         'board must be 6x6 number array',
       );
     });
@@ -82,7 +81,7 @@ describe('GMService', () => {
           const raw = emptyBoard();
           raw[v][h] = v * 10 + h + 0.1;
 
-          await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          await expect(boardService.createBoard({ raw })).rejects.toThrow(
             `[${v}][${h}] is not an integer`,
           );
         }
@@ -95,7 +94,7 @@ describe('GMService', () => {
           const raw = emptyBoard();
           raw[v][h] = -1;
 
-          await expect(gmService.createBoard({ raw })).rejects.toThrow(
+          await expect(boardService.createBoard({ raw })).rejects.toThrow(
             `[${v}][${h}] is negative integer`,
           );
         }
@@ -105,7 +104,7 @@ describe('GMService', () => {
     it('should fail when board has no car', async () => {
       const raw = emptyBoard();
 
-      await expect(gmService.createBoard({ raw })).rejects.toThrow(
+      await expect(boardService.createBoard({ raw })).rejects.toThrow(
         `board must have car[1] of size 2 at row 2`,
       );
     });
@@ -115,7 +114,7 @@ describe('GMService', () => {
         const raw = emptyBoard();
         raw[2][2] = 1;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `board must have car[1] of size 2 at row 2`,
         );
       });
@@ -126,7 +125,7 @@ describe('GMService', () => {
         raw[2][1] = 1;
         raw[2][2] = 1;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `board must have car[1] of size 2 at row 2`,
         );
       });
@@ -139,7 +138,7 @@ describe('GMService', () => {
         raw[row][0] = 1;
         raw[row][1] = 1;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `board must have car[1] of size 2 at row 2`,
         );
       },
@@ -151,7 +150,7 @@ describe('GMService', () => {
         raw[0][0] = 1;
         raw[1][1] = 1;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[1] is not placed correctly`,
         );
       });
@@ -162,7 +161,7 @@ describe('GMService', () => {
         raw[0][1] = 1;
         raw[1][2] = 1;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[1] is not placed correctly`,
         );
       });
@@ -185,7 +184,7 @@ describe('GMService', () => {
       it('horizontal, size < 2', async () => {
         raw[0][0] = 2;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[2] is invalid size "1"`,
         );
       });
@@ -193,7 +192,7 @@ describe('GMService', () => {
       it('vertical, size < 2', async () => {
         raw[0][5] = 2;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[2] is invalid size "1"`,
         );
       });
@@ -203,7 +202,7 @@ describe('GMService', () => {
         raw[0][2] = 2;
         raw[0][3] = 2;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[2] is invalid size "4"`,
         );
       });
@@ -214,7 +213,7 @@ describe('GMService', () => {
         raw[2][5] = 2;
         raw[3][5] = 2;
 
-        await expect(gmService.createBoard({ raw })).rejects.toThrow(
+        await expect(boardService.createBoard({ raw })).rejects.toThrow(
           `car[2] is invalid size "4"`,
         );
       });
@@ -248,7 +247,7 @@ describe('GMService', () => {
         .spyOn(mockBoardModel, 'findCreateFind')
         .mockReturnValue([{ id: 'OK' }, false]);
 
-      const board = await gmService.createBoard({ raw });
+      const board = await boardService.createBoard({ raw });
       expect(board.id).toEqual('OK');
     });
   });

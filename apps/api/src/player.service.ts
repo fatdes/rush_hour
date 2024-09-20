@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ulid } from 'ulidx';
-import { Board } from './board.model';
+import { Board } from '../../../libs/board/src/board.model';
 import { Step } from './dto/game.dto';
 
 @Injectable()

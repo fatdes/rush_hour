@@ -17,7 +17,9 @@
       "sourceRoot": "apps/api/src",
       "compilerOptions": {
         "tsConfigPath": "apps/api/tsconfig.app.json",
-        "plugins": ["@nestjs/swagger"]
+        "plugins": [
+          "@nestjs/swagger"
+        ]
       }
     },
     "solver": {
@@ -27,6 +29,15 @@
       "sourceRoot": "apps/solver/src",
       "compilerOptions": {
         "tsConfigPath": "apps/solver/tsconfig.app.json"
+      }
+    },
+    "board": {
+      "type": "library",
+      "root": "libs/board",
+      "entryFile": "index",
+      "sourceRoot": "libs/board/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/board/tsconfig.lib.json"
       }
     }
   }

@@ -1,3 +1,4 @@
+import { BoardModule } from '@board/board';
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -5,9 +6,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
 import type { RedisClientOptions } from 'redis';
-import { Board } from './board.model';
+import { Board } from '../../../libs/board/src/board.model';
 import { GMController } from './gm.controller';
-import { GMService } from './gm.service';
 import { HealthController } from './health.controller';
 import { PlayerController } from './player.controller';
 import { PlayerService } from './player.service';
@@ -54,8 +54,11 @@ import { PlayerService } from './player.service';
     TerminusModule.forRoot({
       gracefulShutdownTimeoutMs: 1000,
     }),
+
+    // library modules
+    BoardModule,
   ],
   controllers: [HealthController, GMController, PlayerController],
-  providers: [GMService, PlayerService],
+  providers: [PlayerService],
 })
 export class ApiModule {}
