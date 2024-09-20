@@ -1,5 +1,6 @@
-import { Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { MoveCarDto } from './dto/game.dto';
 import { PlayerService } from './player.service';
 
 @Controller()
@@ -10,5 +11,13 @@ export class PlayerController {
   @Post('start-game/:boardId')
   async startGame(@Param('boardId') boardId: string): Promise<string> {
     return await this.playerService.startGame({ boardId });
+  }
+
+  @Put('move-car/:gameId')
+  async moveCar(
+    @Param('gameId') gameId: string,
+    @Body() dto: MoveCarDto,
+  ): Promise<boolean> {
+    return await this.playerService.moveCar({ gameId, step: dto });
   }
 }

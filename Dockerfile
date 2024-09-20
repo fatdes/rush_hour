@@ -5,6 +5,7 @@ WORKDIR /build
 COPY package*.json tsconfig*.json nest-cli.json ./
 RUN yarn install --frozen-lockfile
 
+COPY libs libs
 COPY apps apps
 RUN yarn run build
 

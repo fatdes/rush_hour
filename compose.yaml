@@ -27,6 +27,8 @@ services:
           path: package.json
         - action: rebuild
           path: ./apps/api/
+        - action: rebuild
+          path: ./libs/
     deploy:
       mode: replicated
       replicas: 1

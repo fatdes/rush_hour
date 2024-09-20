@@ -27,9 +27,8 @@ export class Board extends Model {
   // hash of h & v
   @Column
   hash: string;
+}
 
-  // raw format as cars are indicated by 1, 2, ..., n
-  raw: number[][];
-  rawH: number[][];
-  rawV: number[][];
+export function emptyBoard(): number[][] {
+  return new Array(6).fill([]).map(() => new Array(6).fill(0));
 }
