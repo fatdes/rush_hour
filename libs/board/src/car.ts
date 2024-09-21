@@ -23,14 +23,10 @@ export interface CarPosition {
 
 // handy car class to validate size and direction, etc..
 export class Car {
-  private pos: CarPosition[] = [];
-  private dir: CarDirection = CarDirection.invalid;
+  pos: CarPosition[] = [];
+  dir: CarDirection = CarDirection.invalid;
 
   constructor(readonly id: number) {}
-
-  positions(): CarPosition[] {
-    return this.pos;
-  }
 
   size(): number {
     return this.pos.length;

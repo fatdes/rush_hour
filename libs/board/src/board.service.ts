@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import * as crypto from 'crypto';
 import { Board, emptyBoard } from './board.model';
-import { Car, CarDirection, CarPosition, MovementDirection, Step } from './car';
+import { Car, CarPosition, MovementDirection, Step } from './car';
 
 @Injectable()
 export class BoardService {
@@ -24,26 +24,25 @@ export class BoardService {
 
     this.logger.debug(`creating board ${JSON.stringify({ raw })}`);
 
-    const { error, rawH, rawV } = this.normalizeRawBoard(raw);
+    const { error, cars } = this.normalizeRawBoard(raw);
     if (error) {
       throw new UnprocessableEntityException(error);
     }
 
-    const h: string = JSON.stringify(rawH);
-    const v: string = JSON.stringify(rawV);
-    const hash: string = this.createHash(h, v);
+    const carsString: string = JSON.stringify(cars);
 
     const [board, isNew] = await this.boardModel.findCreateFind({
-      where: { hash },
+      where: { cars: carsString },
       defaults: {
-        h,
-        v,
-        hash,
+        cars: carsString,
+        hash: this.createHash(carsString),
+        h: '',
+        v: '',
       },
     });
 
     this.logger.log(
-      `created board ${JSON.stringify({ id: board.id, hash: board.hash, isNew, h, v })}`,
+      `created board ${JSON.stringify({ id: board.id, isNew, cars: carsString })}`,
     );
 
     return board;
@@ -53,21 +52,18 @@ export class BoardService {
     board: Board,
     step: Step,
   ): Promise<{ error?: string; updated?: Board; solved?: boolean }> {
-    const rawH: number[][] = JSON.parse(board.h);
-    const rawV: number[][] = JSON.parse(board.v);
-    const carAt: number[][] =
-      MovementDirection.Left === step.direction ||
-      MovementDirection.Right === step.direction
-        ? rawH
-        : rawV;
+    const raw: number[][] = emptyBoard();
+    const cars: Car[] = JSON.parse(board.cars);
+    const car: Car | undefined = cars.find((c) => c.id === step.carId);
+    if (!car) {
+      return {
+        error: `invalid car[${step.carId}]`,
+      };
+    }
 
-    const car = new Car(step.carId);
-    for (let v = 0; v < 6; v++) {
-      for (let h = 0; h < 6; h++) {
-        const value = carAt[v][h];
-        if (value === car.id) {
-          car.addPosition({ h, v });
-        }
+    for (let c of cars) {
+      for (let p of c.pos) {
+        raw[p.v][p.h] = c.id;
       }
     }
 
@@ -75,7 +71,7 @@ export class BoardService {
     let moveToV: number = -999;
     let move = (_: CarPosition) => {};
 
-    const positions = car.positions();
+    const positions = car.pos;
     switch (step.direction) {
       case MovementDirection.Left:
         moveToH = positions[0].h - 1;
@@ -113,7 +109,7 @@ export class BoardService {
       };
     }
 
-    const blockedBy = rawH[moveToV][moveToH] || rawV[moveToV][moveToH];
+    const blockedBy = raw[moveToV][moveToH];
     if (blockedBy) {
       return {
         error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} is blocked by car[${blockedBy}]`,
@@ -121,25 +117,18 @@ export class BoardService {
     }
 
     positions.forEach((p) => {
-      carAt[p.v][p.h] = 0;
+      raw[p.v][p.h] = 0;
     });
     positions.forEach((p) => {
       move(p);
-      carAt[p.v][p.h] = car.id;
+      raw[p.v][p.h] = car.id;
     });
 
-    if (
-      MovementDirection.Left === step.direction ||
-      MovementDirection.Right === step.direction
-    ) {
-      board.h = JSON.stringify(carAt);
-    } else {
-      board.v = JSON.stringify(carAt);
-    }
+    board.cars = JSON.stringify(cars);
 
     return {
       updated: board,
-      solved: rawH[2][5] === 1,
+      solved: raw[2][5] === 1,
     };
   }
 
@@ -149,20 +138,11 @@ export class BoardService {
     );
   }
 
-  private placeCar(board: number[][], car: Car) {
-    for (let position of car.positions()) {
-      board[position.v][position.h] = car.id;
-    }
-  }
-
   private normalizeRawBoard(raw: number[][]): {
     error?: string;
-    rawH?: number[][];
-    rawV?: number[][];
+    cars?: Car[];
   } {
     const cars: Map<number, Car> = new Map();
-    const rawH: number[][] = emptyBoard();
-    const rawV: number[][] = emptyBoard();
 
     for (let v = 0; v < 6; v++) {
       for (let h = 0; h < 6; h++) {
@@ -203,10 +183,7 @@ export class BoardService {
       cars.size === 0 ||
       cars.get(1) === undefined ||
       cars.get(1)!.size() !== 2 ||
-      !cars
-        .get(1)!
-        .positions()
-        .every(({ v }) => v === 2)
+      !cars.get(1)!.pos.every(({ v }) => v === 2)
     ) {
       return {
         error: `board must have car[1] of size 2 at row 2`,
@@ -219,30 +196,20 @@ export class BoardService {
           error: `car[${car.id}] is invalid size "${car.size()}"`,
         };
       }
-
-      switch (car.direction()) {
-        case CarDirection.horizational:
-          this.placeCar(rawH, car);
-
-          break;
-        case CarDirection.vertical:
-          this.placeCar(rawV, car);
-          break;
-      }
     }
 
     // TODO: normalize cars by the position
 
     return {
-      rawH,
-      rawV,
+      cars: [...cars.entries()]
+        .sort(([id1], [id2]) => id1 - id2)
+        .map(([_, car]) => car),
     };
   }
 
-  private createHash(h: string, v: string): string {
+  private createHash(carString: string): string {
     const hash = crypto.createHash('sha256');
-    hash.update(h);
-    hash.update(v);
+    hash.update(carString);
     return hash.digest('hex');
   }
 }

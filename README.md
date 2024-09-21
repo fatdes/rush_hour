@@ -24,7 +24,8 @@ migrate create -ext sql -seq -digits 5 -dir db/migration rush_hour
 
 apply the migration
 ```bash
-docker run -v ./db/migration:/migration --network host migrate/migrate -path=/migration/ -database postgres://127.0.0.1:5432/rush_hour\?user=rush\&password=hour\&ssmode=disable up
+# set network to correct one
+docker run -v ./db/migration:/migration --network host migrate/migrate -path=/migration/ -database postgres://127.0.0.1:5432/rush_hour\?user=rush\&password=hour\&sslmode=disable up
 ```
 
 ## api
