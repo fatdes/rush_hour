@@ -9,6 +9,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/sequelize';
 import { ulid } from 'ulidx';
 import { Board } from '../../../libs/board/src/board.model';
@@ -30,7 +31,10 @@ export class PlayerService {
     private configService: ConfigService,
     @Inject(BoardService)
     private boardService: BoardService,
-    @Inject(CACHE_MANAGER) private gameState: CacheStore,
+    @Inject(CACHE_MANAGER)
+    private gameState: CacheStore,
+    @Inject('KAFKA_SERVICE')
+    private kafkaClient: ClientProxy,
   ) {}
 
   async startGame({ boardId }: { boardId: string }): Promise<string> {
@@ -100,6 +104,11 @@ export class PlayerService {
     this.logger.debug(
       `moved car ${JSON.stringify({ gameId, state: { updated, steps: state.steps, solved } })}`,
     );
+
+    this.kafkaClient.emit('car_moved', {
+      gameId,
+      step,
+    });
 
     return solved ?? false;
   }

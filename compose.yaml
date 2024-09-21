@@ -37,11 +37,14 @@ services:
     environment:
       - "API_PORT=3000"
       - "REDIS_HOST=redis"
+      - "KAFKA_HOST=kafka"
+      - "KAFKA_PORT=9094"
       - "ENABLE_DEV_CORS=true"
     depends_on:
-#      - redis
+      - redis
       - postgres
       - db-migration
+      - kafka
   solver:
     extends: base
     develop:
@@ -61,5 +64,8 @@ services:
       - "8081:3001"
     environment:
       - "SOLVER_PORT=3001"
-      - "REDIS_HOST=redis"
+      - "KAFKA_HOST=kafka"
+      - "KAFKA_PORT=9094"
       - "ENABLE_DEV_CORS=true"
+    depends_on:
+      - kafka

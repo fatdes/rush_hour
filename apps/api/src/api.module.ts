@@ -2,6 +2,7 @@ import { BoardModule } from '@board/board';
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
@@ -50,6 +51,29 @@ import { PlayerService } from './player.service';
         };
       },
       inject: [ConfigService],
+    }),
+    ClientsModule.registerAsync({
+      clients: [
+        {
+          name: 'KAFKA_SERVICE',
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: async (configService: ConfigService) => ({
+            transport: Transport.KAFKA,
+            options: {
+              client: {
+                clientId: 'api',
+                brokers: [
+                  `${configService.get('KAFKA_HOST') ?? 'localhost'}:${configService.get('KAFKA_PORT') ?? '9092'}`,
+                ],
+              },
+              consumer: {
+                groupId: "api",
+              }
+            },
+          }),
+        },
+      ],
     }),
     TerminusModule.forRoot({
       gracefulShutdownTimeoutMs: 1000,
