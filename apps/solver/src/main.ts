@@ -1,17 +1,32 @@
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { AppModule } from './app.module';
 import { SolverModule } from './solver.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(SolverModule);
-
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  if (configService.get('ENABLE_DEV_CORS')) {
-    Logger.warn('DEV CORS is ENABLED!!!');
-    app.enableCors({ origin: 'http://*:8080' });
-  }
-  await app.listen(configService.get('SOLVER_PORT') ?? 3001);
+  const ms = await NestFactory.createMicroservice<MicroserviceOptions>(
+    SolverModule,
+    {
+      transport: Transport.KAFKA,
+      options: {
+        client: {
+          clientId: 'solver',
+          brokers: [
+            `${configService.get('KAFKA_HOST') ?? 'kafka'}:${configService.get('KAFKA_PORT') ?? 9094}`,
+          ],
+        },
+        consumer: {
+          groupId: 'solver',
+        },
+      },
+    },
+  );
+  await ms.listen();
+
+  await app.close();
 }
 bootstrap();

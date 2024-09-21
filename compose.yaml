@@ -8,17 +8,18 @@ services:
       dockerfile: Dockerfile.dev
     develop:
       watch:
-        - action: sync+restart
+        - action: rebuild
           path: ./db/migration
-          target: /migration
     depends_on:
       postgres:
         condition: service_healthy
+
   base:
     build: .
     deploy:
       mode: replicated
       replicas: 0
+
   api:
     extends: base
     develop:
@@ -40,11 +41,17 @@ services:
       - "KAFKA_HOST=kafka"
       - "KAFKA_PORT=9094"
       - "ENABLE_DEV_CORS=true"
+      - "KAFKAJS_NO_PARTITIONER_WARNING=0"
     depends_on:
-      - redis
-      - postgres
-      - db-migration
-      - kafka
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      db-migration:
+        condition: service_completed_successfully
+
   solver:
     extends: base
     develop:
@@ -55,17 +62,15 @@ services:
           path: ./apps/solver/
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
     command:
       - yarn
       - run
       - start:solver:prod
-    ports:
-      - "8081:3001"
     environment:
-      - "SOLVER_PORT=3001"
       - "KAFKA_HOST=kafka"
       - "KAFKA_PORT=9094"
-      - "ENABLE_DEV_CORS=true"
+      - "KAFKAJS_NO_PARTITIONER_WARNING=0"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy

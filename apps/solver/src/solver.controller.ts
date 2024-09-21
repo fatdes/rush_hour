@@ -1,12 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
-import { SolverService } from './solver.service';
+import { Controller, Logger } from '@nestjs/common';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Controller()
 export class SolverController {
-  constructor(private readonly solverService: SolverService) {}
+  private readonly logger = new Logger(SolverController.name);
 
-  @Get()
-  getHello(): string {
-    return this.solverService.getHello();
+  @EventPattern('car_moved')
+  async handleCarMoved(@Payload() data: any) {
+    this.logger.debug(`handle car moved event ${JSON.stringify(data)}`);
   }
 }
