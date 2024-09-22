@@ -1,10 +1,11 @@
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
-import { Module } from '@nestjs/common';
+import { FactoryProvider, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
+import Redis from 'ioredis';
 import type { RedisClientOptions } from 'redis';
 import { Board } from './board.model';
 import { BoardModule } from './board.module';
@@ -69,6 +70,7 @@ import { PlayerService } from './player.service';
               },
               consumer: {
                 groupId: 'api',
+                rebalanceTimeout: 5,
               },
             },
           }),
@@ -83,6 +85,20 @@ import { PlayerService } from './player.service';
     BoardModule,
   ],
   controllers: [HealthController, GMController, PlayerController],
-  providers: [PlayerService],
+  providers: [
+    PlayerService,
+    {
+      provide: 'REDIS_SERVICE',
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redis = new Redis({
+          host: configService.get('REDIS_HOST') ?? 'redis',
+          port: configService.get('REDIS_PORT') ?? 6379,
+        });
+
+        return redis;
+      },
+    } as FactoryProvider<Redis>,
+  ],
 })
 export class ApiModule {}

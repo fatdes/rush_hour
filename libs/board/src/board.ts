@@ -1,10 +1,23 @@
 import * as crypto from 'crypto';
-import { Car, CarPosition, MovementDirection, Step } from './car';
+import {
+  Car,
+  CarPosition,
+  MovementComment,
+  MovementDirection,
+  Step,
+} from './car';
 
 export class CarMovedEvent {
   gameId: string;
   cars: Car[];
   step: Step;
+  stepId: number;
+}
+
+export class CarMoveCommentedEvent {
+  gameId: string;
+  stepId: number;
+  comment: MovementComment;
 }
 
 export function emptyBoard(): number[][] {
@@ -120,10 +133,10 @@ export async function applyStep(
 }
 
 export function isSolved(data: Car[] | number[][]): boolean {
-  if (data.every((d) => typeof d === typeof Car)) {
-    const p = (data as Car[]).find((c) => c.id === 1)?.pos.slice(-1)[0];
-    return p?.h === 2 && p?.v === 5;
+  if (data.every((d) => Array.isArray(d))) {
+    return (data as number[][])[2][5] === 1;
   }
 
-  return (data as number[][])[2][5] === 1;
+  const p = (data as Car[]).find((c) => c.id === 1)?.pos.slice(-1)[0];
+  return p?.v === 2 && p?.h === 5;
 }
