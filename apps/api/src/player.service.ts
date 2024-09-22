@@ -1,4 +1,11 @@
-import { Car, CarMoveCommentedEvent, CarMovedEvent, Step } from '@board/board';
+import {
+  boardFromCars,
+  Car,
+  CarMoveCommentedEvent,
+  CarMovedEvent,
+  MovementComment,
+  Step,
+} from '@board/board';
 import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 import {
   BadRequestException,
@@ -16,6 +23,7 @@ import { Redis } from 'ioredis';
 import { ulid } from 'ulidx';
 import { Board } from './board.model';
 import { BoardService } from './board.service';
+import { GameStateDto, StepDto } from './dto/game.dto';
 
 export interface GameState {
   board: Board;
@@ -63,6 +71,43 @@ export class PlayerService {
     );
 
     return gameId;
+  }
+
+  async getGameState({ gameId }: { gameId: string }): Promise<GameStateDto> {
+    const state: GameState = (await this.gameState.get(
+      `game:${gameId}`,
+    )) as GameState;
+    if (!state) {
+      throw new UnprocessableEntityException(
+        `game ${gameId} not found, could be expired.`,
+      );
+    }
+
+    const board = boardFromCars(JSON.parse(state.board.cars));
+    const comment = (c?: MovementComment) => {
+      switch (c) {
+        case MovementComment.blunder:
+          return 'blunder';
+        case MovementComment.good:
+          return 'good';
+        case MovementComment.waste:
+          return 'wasted';
+        case MovementComment.calculating:
+        default:
+          return 'calculating';
+      }
+    };
+
+    const steps = state.steps.map<StepDto>((s) => ({
+      carId: s.carId,
+      direction: s.direction,
+      comment: comment(s.comment),
+    }));
+
+    return {
+      board,
+      steps,
+    };
   }
 
   async moveCar({

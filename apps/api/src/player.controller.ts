@@ -1,8 +1,8 @@
 import { CarMoveCommentedEvent } from '@board/board';
-import { Body, Controller, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { ApiTags } from '@nestjs/swagger';
-import { MoveCarDto } from './dto/game.dto';
+import { GameStateDto, MoveCarDto } from './dto/game.dto';
 import { PlayerService } from './player.service';
 
 @Controller()
@@ -10,12 +10,17 @@ import { PlayerService } from './player.service';
 export class PlayerController {
   constructor(private readonly playerService: PlayerService) {}
 
-  @Post('start-game/:boardId')
+  @Post('/start-game/:boardId')
   async startGame(@Param('boardId') boardId: string): Promise<string> {
     return await this.playerService.startGame({ boardId });
   }
 
-  @Put('move-car/:gameId')
+  @Get('/game/:gameId')
+  async getGameState(@Param('gameId') gameId: string): Promise<GameStateDto> {
+    return await this.playerService.getGameState({ gameId });
+  }
+
+  @Put('/move-car/:gameId')
   async moveCar(
     @Param('gameId') gameId: string,
     @Body() dto: MoveCarDto,
@@ -25,6 +30,6 @@ export class PlayerController {
 
   @EventPattern('car_move_commented')
   async handleCarMoveCommented(@Payload() data: CarMoveCommentedEvent) {
-    this.playerService.handleCarMoveCommented(data);
+    await this.playerService.handleCarMoveCommented(data);
   }
 }

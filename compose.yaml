@@ -15,7 +15,8 @@ services:
         condition: service_healthy
 
   api:
-    build: .
+    build:
+      dockerfile: Dockerfile.api
     develop:
       watch:
         - action: rebuild
@@ -44,7 +45,8 @@ services:
         condition: service_completed_successfully
 
   solver:
-    build: .
+    build:
+      dockerfile: Dockerfile.solver
     develop:
       watch:
         - action: rebuild

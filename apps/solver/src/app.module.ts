@@ -23,10 +23,12 @@ import { SolverController } from './solver.controller';
                   `${configService.get('KAFKA_HOST') ?? 'localhost'}:${configService.get('KAFKA_PORT') ?? '9092'}`,
                 ],
               },
-              consumer: {
-                groupId: 'solver',
-                rebalanceTimeout: 5,
+              producer: {
+                retry: {
+                  retries: 5,
+                },
               },
+              producerOnlyMode: true,
             },
           }),
         },

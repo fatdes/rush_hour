@@ -10,7 +10,7 @@ async function bootstrap() {
   const app = await NestFactory.create(ApiModule);
 
   const configService = app.get(ConfigService);
-  const ms = app.connectMicroservice<MicroserviceOptions>({
+  const _ = app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.KAFKA,
     options: {
       client: {

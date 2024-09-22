@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import {
   Car,
+  CarDirection,
   CarPosition,
   MovementComment,
   MovementDirection,
@@ -24,6 +25,16 @@ export function emptyBoard(): number[][] {
   return new Array(6).fill([]).map(() => new Array(6).fill(0));
 }
 
+export function boardFromCars(cars: Car[]): number[][] {
+  const board = emptyBoard();
+  for (let c of cars) {
+    for (let p of c.pos) {
+      board[p.v][p.h] = c.id;
+    }
+  }
+  return board;
+}
+
 export function createHash(carData: string | Car[]): string {
   const hash = crypto.createHash('sha256');
   hash.update(typeof carData === 'string' ? carData : JSON.stringify(carData));
@@ -38,6 +49,34 @@ export function canCarMove(
   let moveToH: number = -999;
   let moveToV: number = -999;
   let move = (_: CarPosition) => {};
+
+  const direction = car.dir;
+  switch (direction) {
+    case CarDirection.horizational:
+      if (
+        step.direction !== MovementDirection.Left &&
+        step.direction !== MovementDirection.Right
+      ) {
+        return {
+          error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} due to horizontal car cannot move up/down`,
+        };
+      }
+      break;
+    case CarDirection.vertical:
+      if (
+        step.direction !== MovementDirection.Up &&
+        step.direction !== MovementDirection.Down
+      ) {
+        return {
+          error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} due to vertical car cannot move left/right`,
+        };
+      }
+      break;
+    default:
+      return {
+        error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} due to invalid car`,
+      };
+  }
 
   const positions = car.pos;
   switch (step.direction) {
@@ -100,12 +139,7 @@ export async function applyStep(
     };
   }
 
-  const board: number[][] = emptyBoard();
-  for (let c of cars) {
-    for (let p of c.pos) {
-      board[p.v][p.h] = c.id;
-    }
-  }
+  const board = boardFromCars(cars);
 
   const { error, move } = canCarMove(board, car, step);
   if (error) {

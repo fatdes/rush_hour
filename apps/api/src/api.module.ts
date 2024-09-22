@@ -68,10 +68,7 @@ import { PlayerService } from './player.service';
                   `${configService.get('KAFKA_HOST') ?? 'localhost'}:${configService.get('KAFKA_PORT') ?? '9092'}`,
                 ],
               },
-              consumer: {
-                groupId: 'api',
-                rebalanceTimeout: 5,
-              },
+              producerOnlyMode: true,
             },
           }),
         },

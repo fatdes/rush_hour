@@ -29,6 +29,21 @@ export interface CarPosition {
   v: number;
 }
 
+export function reverseMovementDirection(
+  d: MovementDirection,
+): MovementDirection {
+  switch (d) {
+    case MovementDirection.Up:
+      return MovementDirection.Down;
+    case MovementDirection.Down:
+      return MovementDirection.Up;
+    case MovementDirection.Left:
+      return MovementDirection.Right;
+    case MovementDirection.Right:
+      return MovementDirection.Left;
+  }
+}
+
 // handy car class to validate size and direction, etc..
 export class Car {
   pos: CarPosition[] = [];
@@ -38,10 +53,6 @@ export class Car {
 
   size(): number {
     return this.pos.length;
-  }
-
-  direction(): CarDirection {
-    return this.dir;
   }
 
   isValidSize(): boolean {
