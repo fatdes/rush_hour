@@ -1,4 +1,3 @@
-import { BoardModule } from '@board/board';
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -7,7 +6,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
 import type { RedisClientOptions } from 'redis';
-import { Board } from '../../../libs/board/src/board.model';
+import { Board } from './board.model';
+import { BoardModule } from './board.module';
 import { GMController } from './gm.controller';
 import { HealthController } from './health.controller';
 import { PlayerController } from './player.controller';
@@ -68,8 +68,8 @@ import { PlayerService } from './player.service';
                 ],
               },
               consumer: {
-                groupId: "api",
-              }
+                groupId: 'api',
+              },
             },
           }),
         },
@@ -79,7 +79,7 @@ import { PlayerService } from './player.service';
       gracefulShutdownTimeoutMs: 1000,
     }),
 
-    // library modules
+    // sub modules
     BoardModule,
   ],
   controllers: [HealthController, GMController, PlayerController],

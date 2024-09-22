@@ -1,11 +1,14 @@
-import { BoardService } from '@board/board';
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { BoardService } from './board.service';
 
 @Controller()
 @ApiTags('gm')
 export class GMController {
-  constructor(private readonly boardService: BoardService) {}
+  constructor(
+    @Inject(BoardService)
+    private readonly boardService: BoardService,
+  ) {}
 
   @Post('create-board')
   @ApiBody({

@@ -5,9 +5,17 @@ export enum MovementDirection {
   Left,
 }
 
+export enum MovementComment {
+  calculating,
+  waste,
+  blunder,
+  good,
+}
+
 export interface Step {
   carId: number;
   direction: MovementDirection;
+  comment?: MovementComment;
 }
 
 export enum CarDirection {

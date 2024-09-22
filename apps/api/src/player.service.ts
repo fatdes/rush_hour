@@ -1,4 +1,4 @@
-import { BoardService, Step } from '@board/board';
+import { Car, CarMovedEvent, Step } from '@board/board';
 import { CACHE_MANAGER, CacheStore } from '@nestjs/cache-manager';
 import {
   BadRequestException,
@@ -12,9 +12,10 @@ import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/sequelize';
 import { ulid } from 'ulidx';
-import { Board } from '../../../libs/board/src/board.model';
+import { Board } from './board.model';
+import { BoardService } from './board.service';
 
-interface GameState {
+export interface GameState {
   board: Board;
   steps: Step[];
   solved: boolean;
@@ -83,18 +84,20 @@ export class PlayerService {
     this.logger.debug(`moving car ${JSON.stringify({ gameId, state, step })}`);
 
     const { error, updated, solved } = await this.boardService.applyStep(
-      state.board,
+      JSON.parse(state.board.cars) as Car[],
       step,
     );
     if (error) {
       throw new BadRequestException(error);
     }
 
+    state.board.cars = JSON.stringify(updated);
+
     state.steps.push(step);
     await this.gameState.set(
       `game:${gameId}`,
       {
-        board: updated,
+        board: state.board,
         steps: state.steps,
         solved,
       } as GameState,
@@ -107,8 +110,9 @@ export class PlayerService {
 
     this.kafkaClient.emit('car_moved', {
       gameId,
+      cars: updated,
       step,
-    });
+    } as CarMovedEvent);
 
     return solved ?? false;
   }

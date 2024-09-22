@@ -14,14 +14,8 @@ services:
       postgres:
         condition: service_healthy
 
-  base:
-    build: .
-    deploy:
-      mode: replicated
-      replicas: 0
-
   api:
-    extends: base
+    build: .
     develop:
       watch:
         - action: rebuild
@@ -53,7 +47,7 @@ services:
         condition: service_completed_successfully
 
   solver:
-    extends: base
+    build: .
     develop:
       watch:
         - action: rebuild
