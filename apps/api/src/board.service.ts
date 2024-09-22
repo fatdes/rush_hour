@@ -1,17 +1,10 @@
-import {
-  Car,
-  CarPosition,
-  emptyBoard,
-  MovementDirection,
-  Step,
-} from '@board/board';
+import { applyStep, Car, createHash, Step } from '@board/board';
 import {
   Injectable,
   Logger,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import * as crypto from 'crypto';
 import { Board } from './board.model';
 
 @Injectable()
@@ -41,7 +34,7 @@ export class BoardService {
       where: { cars: carsString },
       defaults: {
         cars: carsString,
-        hash: this.createHash(carsString),
+        hash: createHash(carsString),
         h: '',
         v: '',
       },
@@ -54,142 +47,11 @@ export class BoardService {
     return board;
   }
 
-  canMove(board: number[][], car: Car, step: Step): boolean {
-    let moveToH: number = -999;
-    let moveToV: number = -999;
-    let move = (_: CarPosition) => {};
-
-    const positions = car.pos;
-    switch (step.direction) {
-      case MovementDirection.Left:
-        moveToH = positions[0].h - 1;
-        moveToV = positions[0].v;
-        move = (p: CarPosition) => {
-          p.h -= 1;
-        };
-        break;
-      case MovementDirection.Right:
-        moveToH = positions.slice(-1)[0].h + 1;
-        moveToV = positions[0].v;
-        move = (p: CarPosition) => {
-          p.h += 1;
-        };
-        break;
-      case MovementDirection.Up:
-        moveToH = positions[0].h;
-        moveToV = positions[0].v - 1;
-        move = (p: CarPosition) => {
-          p.v -= 1;
-        };
-        break;
-      case MovementDirection.Down:
-        moveToH = positions[0].h;
-        moveToV = positions.slice(-1)[0].v + 1;
-        move = (p: CarPosition) => {
-          p.v += 1;
-        };
-        break;
-    }
-
-    if (moveToH < 0 || moveToH > 5 || moveToV < 0 || moveToV > 5) {
-      return false;
-    }
-
-    const blockedBy = board[moveToV][moveToH];
-    if (blockedBy) {
-      return false;
-    }
-
-    return true;
-  }
-
   async applyStep(
     cars: Car[],
     step: Step,
   ): Promise<{ error?: string; updated?: Car[]; solved?: boolean }> {
-    const raw: number[][] = emptyBoard();
-    const car: Car | undefined = cars.find((c) => c.id === step.carId);
-    if (!car) {
-      return {
-        error: `invalid car[${step.carId}]`,
-      };
-    }
-
-    for (let c of cars) {
-      for (let p of c.pos) {
-        raw[p.v][p.h] = c.id;
-      }
-    }
-
-    let moveToH: number = -999;
-    let moveToV: number = -999;
-    let move = (_: CarPosition) => {};
-
-    const positions = car.pos;
-    switch (step.direction) {
-      case MovementDirection.Left:
-        moveToH = positions[0].h - 1;
-        moveToV = positions[0].v;
-        move = (p: CarPosition) => {
-          p.h -= 1;
-        };
-        break;
-      case MovementDirection.Right:
-        moveToH = positions.slice(-1)[0].h + 1;
-        moveToV = positions[0].v;
-        move = (p: CarPosition) => {
-          p.h += 1;
-        };
-        break;
-      case MovementDirection.Up:
-        moveToH = positions[0].h;
-        moveToV = positions[0].v - 1;
-        move = (p: CarPosition) => {
-          p.v -= 1;
-        };
-        break;
-      case MovementDirection.Down:
-        moveToH = positions[0].h;
-        moveToV = positions.slice(-1)[0].v + 1;
-        move = (p: CarPosition) => {
-          p.v += 1;
-        };
-        break;
-    }
-
-    if (moveToH < 0 || moveToH > 5 || moveToV < 0 || moveToV > 5) {
-      return {
-        error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} due to out of the board`,
-      };
-    }
-
-    const blockedBy = raw[moveToV][moveToH];
-    if (blockedBy) {
-      return {
-        error: `not possible to move car[${car.id}] to h:${moveToH} v:${moveToV} is blocked by car[${blockedBy}]`,
-      };
-    }
-
-    positions.forEach((p) => {
-      raw[p.v][p.h] = 0;
-    });
-    positions.forEach((p) => {
-      move(p);
-      raw[p.v][p.h] = car.id;
-    });
-
-    return {
-      updated: cars,
-      solved: raw[2][5] === 1,
-    };
-  }
-
-  createHash(carData: string | Car[]): string {
-    const hash = crypto.createHash('sha256');
-    hash.update(
-      typeof carData === 'string' ? carData : JSON.stringify(carData),
-    );
-    return hash.digest('hex');
+    return await applyStep(cars, step);
   }
 
   private isSixBySixBoard(board: number[][]): boolean {
