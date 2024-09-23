@@ -58,10 +58,6 @@ services:
     deploy:
       mode: replicated
       replicas: 1 # 2 doesn't seem to be stable
-    command:
-      - yarn
-      - run
-      - start:solver:prod
     environment:
       - "KAFKA_HOST=kafka"
       - "KAFKA_PORT=9094"
@@ -69,3 +65,20 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+
+  janitor:
+    build:
+      dockerfile: Dockerfile.janitor
+    develop:
+      watch:
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: ./apps/janitor/
+        - action: rebuild
+          path: ./libs/
+    deploy:
+      mode: replicated
+      replicas: 1 # one and only one
+    environment:
+      - "JANITOR_PORT=3002"

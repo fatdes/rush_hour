@@ -12,6 +12,7 @@
 - *.yaml - docker compose yaml
 - apps/api - rest API
 - apps/solver - backend solver
+- apps/janitor - cronjob to cleanup stuff (nothing to do yet as the game state has expiry set in redis)
 
 ## db migration
 
