@@ -70,3 +70,7 @@ yarn playwright test
   - connects to `localhost:5432`
 - [kafka ui](http://localhost:9992)
   - connects to `kafka:9094`
+
+## known issue
+
+- [connecting to kafka is taking too long...](https://github.com/tulios/kafkajs/issues/807)
