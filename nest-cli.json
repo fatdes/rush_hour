@@ -39,6 +39,24 @@
       "compilerOptions": {
         "tsConfigPath": "libs/board/tsconfig.lib.json"
       }
+    },
+    "cleaner": {
+      "type": "application",
+      "root": "apps/cleaner",
+      "entryFile": "main",
+      "sourceRoot": "apps/cleaner/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/cleaner/tsconfig.app.json"
+      }
+    },
+    "janitor": {
+      "type": "application",
+      "root": "apps/janitor",
+      "entryFile": "main",
+      "sourceRoot": "apps/janitor/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/janitor/tsconfig.app.json"
+      }
     }
   }
 }
