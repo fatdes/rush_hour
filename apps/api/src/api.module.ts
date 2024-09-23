@@ -1,12 +1,14 @@
-import { BoardModule } from '@board/board';
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
-import { Module } from '@nestjs/common';
+import { FactoryProvider, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
+import Redis from 'ioredis';
 import type { RedisClientOptions } from 'redis';
-import { Board } from '../../../libs/board/src/board.model';
+import { Board } from './board.model';
+import { BoardModule } from './board.module';
 import { GMController } from './gm.controller';
 import { HealthController } from './health.controller';
 import { PlayerController } from './player.controller';
@@ -51,14 +53,49 @@ import { PlayerService } from './player.service';
       },
       inject: [ConfigService],
     }),
+    ClientsModule.registerAsync({
+      clients: [
+        {
+          name: 'KAFKA_SERVICE',
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: async (configService: ConfigService) => ({
+            transport: Transport.KAFKA,
+            options: {
+              client: {
+                clientId: 'api',
+                brokers: [
+                  `${configService.get('KAFKA_HOST') ?? 'localhost'}:${configService.get('KAFKA_PORT') ?? '9092'}`,
+                ],
+              },
+              producerOnlyMode: true,
+            },
+          }),
+        },
+      ],
+    }),
     TerminusModule.forRoot({
       gracefulShutdownTimeoutMs: 1000,
     }),
 
-    // library modules
+    // sub modules
     BoardModule,
   ],
   controllers: [HealthController, GMController, PlayerController],
-  providers: [PlayerService],
+  providers: [
+    PlayerService,
+    {
+      provide: 'REDIS_SERVICE',
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redis = new Redis({
+          host: configService.get('REDIS_HOST') ?? 'redis',
+          port: configService.get('REDIS_PORT') ?? 6379,
+        });
+
+        return redis;
+      },
+    } as FactoryProvider<Redis>,
+  ],
 })
 export class ApiModule {}

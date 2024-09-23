@@ -1,6 +1,7 @@
+import { emptyBoard } from '@board/board';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test } from '@nestjs/testing';
-import { Board, emptyBoard } from './board.model';
+import { Board } from './board.model';
 import { BoardService } from './board.service';
 
 describe('BoardService', () => {

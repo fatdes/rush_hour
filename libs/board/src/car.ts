@@ -5,9 +5,17 @@ export enum MovementDirection {
   Left,
 }
 
+export enum MovementComment {
+  calculating,
+  waste,
+  blunder,
+  good,
+}
+
 export interface Step {
   carId: number;
   direction: MovementDirection;
+  comment?: MovementComment;
 }
 
 export enum CarDirection {
@@ -21,23 +29,30 @@ export interface CarPosition {
   v: number;
 }
 
+export function reverseMovementDirection(
+  d: MovementDirection,
+): MovementDirection {
+  switch (d) {
+    case MovementDirection.Up:
+      return MovementDirection.Down;
+    case MovementDirection.Down:
+      return MovementDirection.Up;
+    case MovementDirection.Left:
+      return MovementDirection.Right;
+    case MovementDirection.Right:
+      return MovementDirection.Left;
+  }
+}
+
 // handy car class to validate size and direction, etc..
 export class Car {
-  private pos: CarPosition[] = [];
-  private dir: CarDirection = CarDirection.invalid;
+  pos: CarPosition[] = [];
+  dir: CarDirection = CarDirection.invalid;
 
   constructor(readonly id: number) {}
 
-  positions(): CarPosition[] {
-    return this.pos;
-  }
-
   size(): number {
     return this.pos.length;
-  }
-
-  direction(): CarDirection {
-    return this.dir;
   }
 
   isValidSize(): boolean {

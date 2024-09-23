@@ -18,17 +18,14 @@ export class Board extends Model {
   @Column
   id: string;
 
-  // transformed from raw to horizontal & vertical, stored as string '[[], [], ...]'
+  // Deprecated: these three columns will be removed once column "cars" is in place.
   @Column
   h: string;
   @Column
   v: string;
 
-  // hash of h & v
+  @Column
+  cars: string;
   @Column
   hash: string;
-}
-
-export function emptyBoard(): number[][] {
-  return new Array(6).fill([]).map(() => new Array(6).fill(0));
 }

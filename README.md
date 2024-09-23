@@ -24,7 +24,8 @@ migrate create -ext sql -seq -digits 5 -dir db/migration rush_hour
 
 apply the migration
 ```bash
-docker run -v ./db/migration:/migration --network host migrate/migrate -path=/migration/ -database postgres://127.0.0.1:5432/rush_hour\?user=rush\&password=hour\&ssmode=disable up
+# set network to correct one
+docker run -v ./db/migration:/migration --network host migrate/migrate -path=/migration/ -database postgres://127.0.0.1:5432/rush_hour\?user=rush\&password=hour\&sslmode=disable up
 ```
 
 ## api
@@ -61,3 +62,15 @@ yarn run test:e2e
 cd automated_test
 yarn playwright test
 ```
+
+## handy UIs
+
+- [redis ui](http://localhost:9379)
+- [postgres ui](http://localhost:9432) _only if you have uncommented the pgadmin in [infra.yaml](./infra.yaml)
+  - connects to `localhost:5432`
+- [kafka ui](http://localhost:9992)
+  - connects to `kafka:9094`
+
+## known issue
+
+- [connecting to kafka is taking too long...](https://github.com/tulios/kafkajs/issues/807)
