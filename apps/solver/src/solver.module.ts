@@ -24,7 +24,7 @@ import { SolverController } from './solver.controller';
                       colorize: true,
                       colorizeObjects: true,
                       singleLine: true,
-                      ignore: 'reqId,req.headers,req.remotePort,pid,hostname,res.headers',
+                      ignore: 'reqId,req.headers,req.remotePort,pid,hostname,res.headers,context',
                     },
                   }
                 : undefined,

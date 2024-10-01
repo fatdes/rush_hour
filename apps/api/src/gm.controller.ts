@@ -1,10 +1,19 @@
-import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Inject,
+  Logger,
+  Post,
+} from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { BoardService } from './board.service';
 
 @Controller()
 @ApiTags('gm')
 export class GMController {
+  private readonly logger = new Logger(GMController.name);
+
   constructor(
     @Inject(BoardService)
     private readonly boardService: BoardService,
@@ -34,7 +43,11 @@ export class GMController {
   })
   @HttpCode(200)
   async createBoard(@Body() raw: number[][]): Promise<string> {
-    const board = await this.boardService.createBoard({ raw });
-    return board.id;
+    try {
+      const board = await this.boardService.createBoard({ raw });
+      return board.id;
+    } finally {
+      this.logger.log('board created');
+    }
   }
 }

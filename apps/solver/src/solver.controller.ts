@@ -10,8 +10,9 @@ import {
   reverseMovementDirection,
   Step,
 } from '@board/board';
-import { Controller, Inject, Logger } from '@nestjs/common';
+import { Controller, Inject } from '@nestjs/common';
 import { ClientProxy, EventPattern, Payload } from '@nestjs/microservices';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 class Check {
   steps: Step[];
@@ -66,9 +67,9 @@ class Check {
 
 @Controller()
 export class SolverController {
-  private readonly logger = new Logger(SolverController.name);
-
   constructor(
+    @InjectPinoLogger(SolverController.name)
+    private logger: PinoLogger,
     @Inject('KAFKA_SERVICE')
     private kafkaClient: ClientProxy,
   ) {}
@@ -106,42 +107,55 @@ export class SolverController {
 
   @EventPattern('car_moved')
   async handleCarMoved(@Payload() data: CarMovedEvent) {
-    this.logger.debug(`handling car moved event ${JSON.stringify(data)}`);
+    let logContext = {};
 
-    const { gameId, cars, step } = data;
-    const solved = isSolved(cars);
+    try {
+      this.logger.debug(`handling car moved event ${JSON.stringify(data)}`);
 
-    if (solved) {
-      // must to be a good move!
+      const { gameId, cars, step } = data;
+      const solved = isSolved(cars);
+
+      logContext = { gameId, step, solved, ...logContext };
+
+      if (solved) {
+        // must to be a good move!
+        this.kafkaClient.emit('car_move_commented', {
+          gameId: data.gameId,
+          stepId: data.stepId,
+          comment: MovementComment.good,
+        } as CarMoveCommentedEvent);
+        return;
+      }
+
+      const { solution } = await this.solve(cars);
+      logContext = { solutionLen: solution?.length ?? -1, ...logContext };
+      if (!solution) {
+        return;
+      }
+
+      const { updated: prevState } = await applyStep(cars, {
+        carId: step.carId,
+        direction: reverseMovementDirection(step.direction),
+      });
+      const { solution: prevSolution } = await this.solve(prevState!);
+
+      logContext = {
+        prevSolutionLen: prevSolution?.length ?? -1,
+        ...logContext,
+      };
+
       this.kafkaClient.emit('car_move_commented', {
         gameId: data.gameId,
         stepId: data.stepId,
-        comment: MovementComment.good,
+        comment:
+          solution!.length < prevSolution!.length
+            ? MovementComment.good
+            : solution!.length === prevSolution!.length
+              ? MovementComment.waste
+              : MovementComment.blunder,
       } as CarMoveCommentedEvent);
-      return;
+    } finally {
+      this.logger.info(logContext, 'car moved event handled');
     }
-
-    const { solution } = await this.solve(cars);
-    if (!solution) {
-      this.logger.error(`no solution for game ${gameId}`);
-      return;
-    }
-
-    const { updated: prevState } = await applyStep(cars, {
-      carId: step.carId,
-      direction: reverseMovementDirection(step.direction),
-    });
-    const { solution: prevSolution } = await this.solve(prevState!);
-
-    this.kafkaClient.emit('car_move_commented', {
-      gameId: data.gameId,
-      stepId: data.stepId,
-      comment:
-        solution!.length < prevSolution!.length
-          ? MovementComment.good
-          : solution!.length === prevSolution!.length
-            ? MovementComment.waste
-            : MovementComment.blunder,
-    } as CarMoveCommentedEvent);
   }
 }
