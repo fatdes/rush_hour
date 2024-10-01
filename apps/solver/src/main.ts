@@ -1,10 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { AppModule } from './app.module';
+import { SolverModule } from './solver.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(SolverModule);
 
   const configService = app.get(ConfigService);
   const ms = app.connectMicroservice<MicroserviceOptions>({

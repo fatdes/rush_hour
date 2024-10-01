@@ -38,4 +38,4 @@ import { SolverController } from './solver.controller';
   controllers: [SolverController],
   providers: [],
 })
-export class AppModule {}
+export class SolverModule {}
