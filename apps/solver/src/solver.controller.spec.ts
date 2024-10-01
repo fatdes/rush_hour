@@ -1,5 +1,7 @@
+import { CanonicalLogInterceptor } from '@app/middleware';
 import { Car, CarPosition, MovementDirection } from '@board/board';
 import { Test } from '@nestjs/testing';
+import { getLoggerToken } from 'nestjs-pino';
 import { SolverController } from './solver.controller';
 
 describe('SolverController', () => {
@@ -7,6 +9,9 @@ describe('SolverController', () => {
 
   const mockClientProxy = {
     emit: jest.fn(),
+  };
+  const mockLogger = {
+    debug: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -16,6 +21,14 @@ describe('SolverController', () => {
         {
           provide: 'KAFKA_SERVICE',
           useValue: mockClientProxy,
+        },
+        {
+          provide: getLoggerToken(SolverController.name),
+          useValue: mockLogger,
+        },
+        {
+          provide: getLoggerToken(CanonicalLogInterceptor.name),
+          useValue: mockLogger,
         },
       ],
     }).compile();

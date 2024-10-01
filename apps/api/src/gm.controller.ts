@@ -1,3 +1,4 @@
+import { CanonicalLogInterceptor } from '@app/middleware';
 import {
   Body,
   Controller,
@@ -5,12 +6,14 @@ import {
   Inject,
   Logger,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { BoardService } from './board.service';
 
 @Controller()
 @ApiTags('gm')
+@UseInterceptors(CanonicalLogInterceptor)
 export class GMController {
   private readonly logger = new Logger(GMController.name);
 
@@ -43,11 +46,7 @@ export class GMController {
   })
   @HttpCode(200)
   async createBoard(@Body() raw: number[][]): Promise<string> {
-    try {
-      const board = await this.boardService.createBoard({ raw });
-      return board.id;
-    } finally {
-      this.logger.log('board created');
-    }
+    const board = await this.boardService.createBoard({ raw });
+    return board.id;
   }
 }

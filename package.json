@@ -103,7 +103,8 @@
       "<rootDir>/libs/"
     ],
     "moduleNameMapper": {
-      "^@board/board(|/.*)$": "<rootDir>/libs/board/src/$1"
+      "^@board/board(|/.*)$": "<rootDir>/libs/board/src/$1",
+      "^@app/middleware(|/.*)$": "<rootDir>/libs/middleware/src/$1"
     }
   }
 }

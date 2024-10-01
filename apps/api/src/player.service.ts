@@ -13,13 +13,13 @@ import {
   GoneException,
   Inject,
   Injectable,
-  Logger,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectModel } from '@nestjs/sequelize';
 import { Redis } from 'ioredis';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ulid } from 'ulidx';
 import { Board } from './board.model';
 import { BoardService } from './board.service';
@@ -33,9 +33,9 @@ export interface GameState {
 
 @Injectable()
 export class PlayerService {
-  private readonly logger = new Logger(PlayerService.name);
-
   constructor(
+    @InjectPinoLogger(PlayerService.name)
+    private logger: PinoLogger,
     @InjectModel(Board)
     private boardModel: typeof Board,
     @Inject(ConfigService)
@@ -58,7 +58,9 @@ export class PlayerService {
 
     const gameId = `GAME-${ulid()}`;
 
-    this.logger.debug(`creating game ${JSON.stringify({ boardId, gameId })}`);
+    this.logger.assign({ gameId });
+
+    this.logger.debug(`creating game`);
 
     await this.gameState.set(
       `game:${gameId}`,
@@ -117,6 +119,8 @@ export class PlayerService {
     gameId: string;
     step: Step;
   }): Promise<boolean> {
+    this.logger.assign({ step });
+
     const state: GameState = (await this.gameState.get(
       `game:${gameId}`,
     )) as GameState;
@@ -129,8 +133,6 @@ export class PlayerService {
     if (state.solved) {
       throw new GoneException(`game ${gameId} is already solved.`);
     }
-
-    this.logger.debug(`moving car ${JSON.stringify({ gameId, state, step })}`);
 
     const acquired = await this.acquireLock(gameId);
     if (!acquired) {
@@ -148,9 +150,11 @@ export class PlayerService {
         throw new BadRequestException(error);
       }
 
-      state.board.cars = JSON.stringify(updated);
+      this.logger.assign({ applyStep: true, currentStepLen: state.steps.length });
 
+      state.board.cars = JSON.stringify(updated);
       state.steps.push(step);
+
       await this.gameState.set(
         `game:${gameId}`,
         {
@@ -161,9 +165,7 @@ export class PlayerService {
         { ttl: this.getGameExpiryTtlSecond() },
       );
 
-      this.logger.debug(
-        `moved car ${JSON.stringify({ gameId, state: { updated, steps: state.steps, solved } })}`,
-      );
+      this.logger.assign({ cacheUpdated: true, updatedStepLen: state.steps.length });
 
       this.kafkaClient.emit('car_moved', {
         gameId,
@@ -172,16 +174,17 @@ export class PlayerService {
         stepId: state.steps.length,
       } as CarMovedEvent);
 
+      this.logger.assign({ eventEmitted: true });
+
       return solved ?? false;
     } finally {
       await this.releaseLock(gameId);
     }
   }
 
+  // FIXME: event pattern doesn't support pinolog.assign()
   async handleCarMoveCommented(data: CarMoveCommentedEvent) {
-    this.logger.debug(
-      `handling car move commented event ${JSON.stringify(data)}`,
-    );
+    this.logger.assign({ payload: data });
 
     const { gameId, stepId, comment } = data;
 
@@ -193,10 +196,13 @@ export class PlayerService {
       return;
     }
 
+    this.logger.assign({ currentStepsLen: state.steps.length });
+
     if (state.steps.length < stepId) {
-      this.logger.error(
-        `game ${data.gameId} has invalid step ${stepId} >= ${state.steps.length}, skip`,
-      );
+      this.logger.assign({
+        err: `game ${data.gameId} has invalid step ${stepId} >= ${state.steps.length}`,
+        skip: true,
+      });
       return;
     }
 
@@ -214,6 +220,8 @@ export class PlayerService {
       await this.gameState.set(`game:${gameId}`, state, {
         ttl: this.getGameExpiryTtlSecond(),
       });
+
+      this.logger.assign({ cacheUpdated: true });
     } finally {
       await this.releaseLock(gameId);
     }

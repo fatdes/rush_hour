@@ -23,6 +23,12 @@
       ],
       "@board/board/*": [
         "libs/board/src/*"
+      ],
+      "@app/middleware": [
+        "libs/middleware/src"
+      ],
+      "@app/middleware/*": [
+        "libs/middleware/src/*"
       ]
     }
   }

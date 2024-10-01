@@ -8,6 +8,7 @@ import { redisStore } from 'cache-manager-redis-store';
 import Redis from 'ioredis';
 import { Logger, LoggerModule } from 'nestjs-pino';
 import type { RedisClientOptions } from 'redis';
+import { ulid } from 'ulidx';
 import { Board } from './board.model';
 import { BoardModule } from './board.module';
 import { GMController } from './gm.controller';
@@ -40,12 +41,19 @@ import { PlayerService } from './player.service';
                     },
                   }
                 : undefined,
+            genReqId(req) {
+              return req.headers['request-id'] ?? ulid();
+            },
             autoLogging: false,
           },
           exclude: [
             {
               method: RequestMethod.ALL,
               path: 'health',
+            },
+            {
+              method: RequestMethod.ALL,
+              path: 'docs',
             },
           ],
         };
