@@ -1,11 +1,12 @@
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
-import { FactoryProvider, Module } from '@nestjs/common';
+import { FactoryProvider, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { TerminusModule } from '@nestjs/terminus';
 import { redisStore } from 'cache-manager-redis-store';
 import Redis from 'ioredis';
+import { Logger, LoggerModule } from 'nestjs-pino';
 import type { RedisClientOptions } from 'redis';
 import { Board } from './board.model';
 import { BoardModule } from './board.module';
@@ -19,8 +20,39 @@ import { PlayerService } from './player.service';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    LoggerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => {
+        return {
+          pinoHttp: {
+            level: config.get('LOG_LEVEL') ?? 'debug',
+            transport:
+              (config.get('LOG_FORMAT') ?? 'json' !== 'json')
+                ? {
+                    target: 'pino-pretty',
+                    options: {
+                      colorize: true,
+                      colorizeObjects: true,
+                      singleLine: true,
+                    },
+                  }
+                : undefined,
+            autoLogging: false,
+          },
+          exclude: [
+            {
+              method: RequestMethod.ALL,
+              path: 'health',
+            },
+          ],
+        };
+      },
+    }),
     SequelizeModule.forRootAsync({
-      useFactory: async (configService: ConfigService) => ({
+      imports: [ConfigModule, LoggerModule],
+      inject: [ConfigService, Logger],
+      useFactory: async (configService: ConfigService, logger: Logger) => ({
         dialect: configService.get('DATABASE_TYPE') ?? 'postgres',
         host: configService.get('DATABASE_HOST') ?? 'postgres',
         port: configService.get('DATABASE_PORT') ?? 5432,
@@ -31,8 +63,8 @@ import { PlayerService } from './player.service';
         define: {
           underscored: true,
         },
+        logging: (sql, timing) => logger.debug(sql, timing),
       }),
-      inject: [ConfigService],
     }),
     SequelizeModule.forFeature([Board]),
     // https://github.com/dabroek/node-cache-manager-redis-store/issues/40

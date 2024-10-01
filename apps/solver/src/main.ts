@@ -1,10 +1,15 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from 'nestjs-pino';
 import { SolverModule } from './solver.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(SolverModule);
+  const app = await NestFactory.create(SolverModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
+  app.flushLogs();
 
   const configService = app.get(ConfigService);
   const ms = app.connectMicroservice<MicroserviceOptions>({
