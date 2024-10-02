@@ -29,7 +29,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "cd automated_apps/rush_hour/test && yarn playwright test"
+    "test:e2e": "cd automated_test && yarn playwright test"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^2.2.2",
@@ -48,8 +48,11 @@
     "class-validator": "^0.14.1",
     "ioredis": "^5.4.1",
     "kafkajs": "^2.2.4",
+    "nestjs-pino": "^4.1.0",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
+    "pino-http": "^10.3.0",
+    "pino-pretty": "^11.2.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "sequelize": "^6.37.3",
@@ -100,7 +103,8 @@
       "<rootDir>/libs/"
     ],
     "moduleNameMapper": {
-      "^@board/board(|/.*)$": "<rootDir>/libs/board/src/$1"
+      "^@board/board(|/.*)$": "<rootDir>/libs/board/src/$1",
+      "^@app/middleware(|/.*)$": "<rootDir>/libs/middleware/src/$1"
     }
   }
 }

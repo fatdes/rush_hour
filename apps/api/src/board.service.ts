@@ -1,17 +1,14 @@
 import { applyStep, Car, createHash, Step } from '@board/board';
-import {
-  Injectable,
-  Logger,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Board } from './board.model';
 
 @Injectable()
 export class BoardService {
-  private readonly logger = new Logger(BoardService.name);
-
   constructor(
+    @InjectPinoLogger(BoardService.name)
+    private logger: PinoLogger,
     @InjectModel(Board)
     private boardModel: typeof Board,
   ) {}
@@ -21,7 +18,7 @@ export class BoardService {
       throw new UnprocessableEntityException('board must be 6x6 number array');
     }
 
-    this.logger.debug(`creating board ${JSON.stringify({ raw })}`);
+    this.logger.debug('creating board', { raw });
 
     const { error, cars } = this.normalizeRawBoard(raw);
     if (error) {
@@ -40,9 +37,10 @@ export class BoardService {
       },
     });
 
-    this.logger.log(
-      `created board ${JSON.stringify({ id: board.id, isNew, cars: carsString })}`,
-    );
+    this.logger.assign({
+      boardId: board.id,
+      boardIsNew: isNew,
+    });
 
     return board;
   }

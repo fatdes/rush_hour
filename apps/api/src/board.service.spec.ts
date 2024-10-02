@@ -1,6 +1,7 @@
 import { emptyBoard } from '@board/board';
 import { getModelToken } from '@nestjs/sequelize';
 import { Test } from '@nestjs/testing';
+import { getLoggerToken } from 'nestjs-pino';
 import { Board } from './board.model';
 import { BoardService } from './board.service';
 
@@ -10,6 +11,10 @@ describe('BoardService', () => {
   const mockBoardModel = {
     findCreateFind: jest.fn(),
   };
+  const mockLogger = {
+    debug: jest.fn(),
+    assign: jest.fn(),
+  };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -18,6 +23,10 @@ describe('BoardService', () => {
         {
           provide: getModelToken(Board),
           useValue: mockBoardModel,
+        },
+        {
+          provide: getLoggerToken(BoardService.name),
+          useValue: mockLogger,
         },
       ],
     }).compile();

@@ -1,10 +1,22 @@
-import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
+import { CanonicalLogInterceptor } from '@app/middleware';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Inject,
+  Logger,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { BoardService } from './board.service';
 
 @Controller()
 @ApiTags('gm')
+@UseInterceptors(CanonicalLogInterceptor)
 export class GMController {
+  private readonly logger = new Logger(GMController.name);
+
   constructor(
     @Inject(BoardService)
     private readonly boardService: BoardService,

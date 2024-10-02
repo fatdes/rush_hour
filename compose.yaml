@@ -26,14 +26,16 @@ services:
         - action: rebuild
           path: ./libs/
     ports:
-      - "8080:3000"
+      - '8080:3000'
     environment:
-      - "API_PORT=3000"
-      - "REDIS_HOST=redis"
-      - "KAFKA_HOST=kafka"
-      - "KAFKA_PORT=9094"
-      - "ENABLE_DEV_CORS=true"
-      - "KAFKAJS_NO_PARTITIONER_WARNING=0"
+      - 'LOG_LEVEL=info'
+      - 'LOG_FORMAT=console'
+      - 'API_PORT=3000'
+      - 'REDIS_HOST=redis'
+      - 'KAFKA_HOST=kafka'
+      - 'KAFKA_PORT=9094'
+      - 'ENABLE_DEV_CORS=true'
+      - 'KAFKAJS_NO_PARTITIONER_WARNING=0'
     depends_on:
       redis:
         condition: service_healthy
@@ -59,9 +61,11 @@ services:
       mode: replicated
       replicas: 1 # 2 doesn't seem to be stable
     environment:
-      - "KAFKA_HOST=kafka"
-      - "KAFKA_PORT=9094"
-      - "KAFKAJS_NO_PARTITIONER_WARNING=0"
+      - 'LOG_LEVEL=info'
+      - 'LOG_FORMAT=console'
+      - 'KAFKA_HOST=kafka'
+      - 'KAFKA_PORT=9094'
+      - 'KAFKAJS_NO_PARTITIONER_WARNING=0'
     depends_on:
       kafka:
         condition: service_healthy
@@ -81,4 +85,6 @@ services:
       mode: replicated
       replicas: 1 # one and only one
     environment:
-      - "JANITOR_PORT=3002"
+      - 'LOG_LEVEL=info'
+      - 'LOG_FORMAT=console'
+      - 'JANITOR_PORT=3002'

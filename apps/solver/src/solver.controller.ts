@@ -1,3 +1,4 @@
+import { CanonicalLogInterceptor } from '@app/middleware';
 import {
   applyStep,
   Car,
@@ -10,8 +11,9 @@ import {
   reverseMovementDirection,
   Step,
 } from '@board/board';
-import { Controller, Inject, Logger } from '@nestjs/common';
+import { Controller, Inject, UseInterceptors } from '@nestjs/common';
 import { ClientProxy, EventPattern, Payload } from '@nestjs/microservices';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 class Check {
   steps: Step[];
@@ -65,10 +67,11 @@ class Check {
 }
 
 @Controller()
+@UseInterceptors(CanonicalLogInterceptor)
 export class SolverController {
-  private readonly logger = new Logger(SolverController.name);
-
   constructor(
+    @InjectPinoLogger(SolverController.name)
+    private logger: PinoLogger,
     @Inject('KAFKA_SERVICE')
     private kafkaClient: ClientProxy,
   ) {}
@@ -106,10 +109,12 @@ export class SolverController {
 
   @EventPattern('car_moved')
   async handleCarMoved(@Payload() data: CarMovedEvent) {
-    this.logger.debug(`handling car moved event ${JSON.stringify(data)}`);
+    this.logger.assign({ payload: data });
 
     const { gameId, cars, step } = data;
     const solved = isSolved(cars);
+
+    this.logger.assign({ solved });
 
     if (solved) {
       // must to be a good move!
@@ -122,8 +127,8 @@ export class SolverController {
     }
 
     const { solution } = await this.solve(cars);
+    this.logger.assign({ solutionLen: solution?.length ?? -1 });
     if (!solution) {
-      this.logger.error(`no solution for game ${gameId}`);
       return;
     }
 
@@ -132,6 +137,8 @@ export class SolverController {
       direction: reverseMovementDirection(step.direction),
     });
     const { solution: prevSolution } = await this.solve(prevState!);
+
+    this.logger.assign({ prevSolutionLen: prevSolution?.length ?? -1 });
 
     this.kafkaClient.emit('car_move_commented', {
       gameId: data.gameId,

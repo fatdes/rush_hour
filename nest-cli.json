@@ -57,6 +57,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/janitor/tsconfig.app.json"
       }
+    },
+    "middleware": {
+      "type": "library",
+      "root": "libs/middleware",
+      "entryFile": "index",
+      "sourceRoot": "libs/middleware/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/middleware/tsconfig.lib.json"
+      }
     }
   }
 }
