@@ -1,5 +1,6 @@
+import { LoggerModuleParams } from '@app/middleware';
 import { CacheModule, CacheStore } from '@nestjs/cache-manager';
-import { FactoryProvider, Module, RequestMethod } from '@nestjs/common';
+import { FactoryProvider, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -8,7 +9,6 @@ import { redisStore } from 'cache-manager-redis-store';
 import Redis from 'ioredis';
 import { Logger, LoggerModule } from 'nestjs-pino';
 import type { RedisClientOptions } from 'redis';
-import { ulid } from 'ulidx';
 import { Board } from './board.model';
 import { BoardModule } from './board.module';
 import { GMController } from './gm.controller';
@@ -24,40 +24,7 @@ import { PlayerService } from './player.service';
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (config: ConfigService) => {
-        return {
-          pinoHttp: {
-            level: config.get('LOG_LEVEL') ?? 'debug',
-            transport:
-              (config.get('LOG_FORMAT') ?? 'json' !== 'json')
-                ? {
-                    target: 'pino-pretty',
-                    options: {
-                      colorize: true,
-                      colorizeObjects: true,
-                      singleLine: true,
-                      ignore:
-                        'reqId,req.headers,req.remotePort,pid,hostname,res.headers,context',
-                    },
-                  }
-                : undefined,
-            genReqId(req) {
-              return req.headers['request-id'] ?? ulid();
-            },
-            autoLogging: false,
-          },
-          exclude: [
-            {
-              method: RequestMethod.ALL,
-              path: 'health',
-            },
-            {
-              method: RequestMethod.ALL,
-              path: 'docs',
-            },
-          ],
-        };
-      },
+      useFactory: LoggerModuleParams,
     }),
     SequelizeModule.forRootAsync({
       imports: [ConfigModule, LoggerModule],
