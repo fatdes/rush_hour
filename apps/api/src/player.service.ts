@@ -121,19 +121,6 @@ export class PlayerService {
   }): Promise<boolean> {
     this.logger.assign({ step });
 
-    const state: GameState = (await this.gameState.get(
-      `game:${gameId}`,
-    )) as GameState;
-    if (!state) {
-      throw new UnprocessableEntityException(
-        `game ${gameId} not found, could be expired.`,
-      );
-    }
-
-    if (state.solved) {
-      throw new GoneException(`game ${gameId} is already solved.`);
-    }
-
     const acquired = await this.acquireLock(gameId);
     if (!acquired) {
       throw new ConflictException(
@@ -142,6 +129,19 @@ export class PlayerService {
     }
 
     try {
+      const state: GameState = (await this.gameState.get(
+        `game:${gameId}`,
+      )) as GameState;
+      if (!state) {
+        throw new UnprocessableEntityException(
+          `game ${gameId} not found, could be expired.`,
+        );
+      }
+
+      if (state.solved) {
+        throw new GoneException(`game ${gameId} is already solved.`);
+      }
+
       const { error, updated, solved } = await this.boardService.applyStep(
         JSON.parse(state.board.cars) as Car[],
         step,
@@ -150,7 +150,10 @@ export class PlayerService {
         throw new BadRequestException(error);
       }
 
-      this.logger.assign({ applyStep: true, currentStepLen: state.steps.length });
+      this.logger.assign({
+        applyStep: true,
+        currentStepLen: state.steps.length,
+      });
 
       state.board.cars = JSON.stringify(updated);
       state.steps.push(step);
@@ -165,7 +168,10 @@ export class PlayerService {
         { ttl: this.getGameExpiryTtlSecond() },
       );
 
-      this.logger.assign({ cacheUpdated: true, updatedStepLen: state.steps.length });
+      this.logger.assign({
+        cacheUpdated: true,
+        updatedStepLen: state.steps.length,
+      });
 
       this.kafkaClient.emit('car_moved', {
         gameId,
@@ -188,24 +194,6 @@ export class PlayerService {
 
     const { gameId, stepId, comment } = data;
 
-    const state: GameState = (await this.gameState.get(
-      `game:${data.gameId}`,
-    )) as GameState;
-    if (!state) {
-      this.logger.debug(`game ${data.gameId} is already gone, ignore`);
-      return;
-    }
-
-    this.logger.assign({ currentStepsLen: state.steps.length });
-
-    if (state.steps.length < stepId) {
-      this.logger.assign({
-        err: `game ${data.gameId} has invalid step ${stepId} >= ${state.steps.length}`,
-        skip: true,
-      });
-      return;
-    }
-
     const acquired = await this.acquireLock(gameId);
     if (!acquired) {
       // will try again
@@ -215,6 +203,24 @@ export class PlayerService {
     }
 
     try {
+      const state: GameState = (await this.gameState.get(
+        `game:${data.gameId}`,
+      )) as GameState;
+      if (!state) {
+        this.logger.debug(`game ${data.gameId} is already gone, ignore`);
+        return;
+      }
+
+      this.logger.assign({ currentStepsLen: state.steps.length });
+
+      if (state.steps.length < stepId) {
+        this.logger.assign({
+          err: `game ${data.gameId} has invalid step ${stepId} >= ${state.steps.length}`,
+          skip: true,
+        });
+        return;
+      }
+
       state.steps[stepId - 1].comment = comment;
 
       await this.gameState.set(`game:${gameId}`, state, {
