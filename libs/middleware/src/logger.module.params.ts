@@ -17,6 +17,7 @@ export async function LoggerModuleParams(
                 colorize: true,
                 colorizeObjects: true,
                 singleLine: true,
+                translateTime: 'SYS:isoDateTime',
                 ignore:
                   'reqId,req.headers,req.remotePort,pid,hostname,res.headers,context',
               },
